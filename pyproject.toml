@@ -1,0 +1,15 @@
+[project]
+name = "tencent-outsource-interview"
+version = "0.1.0"
+description = "Internal database instance management system"
+readme = "README.md"
+authors = [
+    { name = "starslayerx", email = "starslayerx@outlook.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "django>=5.2,<5.3",
+    "django-ninja>=1.4,<2",
+]
+
+# This is a Django application, not an installable command-line package.
