@@ -10,6 +10,8 @@ requires-python = ">=3.13"
 dependencies = [
     "django>=5.2,<5.3",
     "django-ninja>=1.4,<2",
+    "psycopg[binary]>=3.3.9",
+    "python-dotenv>=1.2.4",
 ]
 
 # This is a Django application, not an installable command-line package.
