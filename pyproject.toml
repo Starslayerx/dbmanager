@@ -14,4 +14,12 @@ dependencies = [
     "python-dotenv>=1.2.4",
 ]
 
-# This is a Django application, not an installable command-line package.
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "pytest-django>=4.14.0",
+]
+
+[tools.pytest.init_options]
+DJANGO_SETTINGS_MODULE = 'config.settings'
+python_files = ['tests.py', 'test_*.py', '*_test.py']
