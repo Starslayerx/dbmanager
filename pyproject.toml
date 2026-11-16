@@ -20,6 +20,6 @@ dev = [
     "pytest-django>=4.14.0",
 ]
 
-[tools.pytest.init_options]
+[tools.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = 'config.settings'
 python_files = ['tests.py', 'test_*.py', '*_test.py']
