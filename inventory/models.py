@@ -46,7 +46,6 @@ class DatabaseInstance(models.Model):
     class Status(models.TextChoices):
         ACTIVE = 'active'
         PAUSED = 'paused'
-        RETIRED = 'retired'
 
     code = models.CharField(max_length=64, unique=True)
     name = models.CharField(max_length=64)
@@ -60,22 +59,13 @@ class DatabaseInstance(models.Model):
     status = models.CharField(max_length=16, choices=Status.choices)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    retired_at = models.DateTimeField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [
             models.CheckConstraint(
                 condition=models.Q(port__gte=1, port__lte=65535),
                 name='instance_port_valid_range',
-            ),
-            # 退役状态与时间限制
-            models.CheckConstraint(
-                condition=models.Q(status='retired', retired_at__isnull=False)
-                | (
-                    ~models.Q(status='retired')
-                    & models.Q(retired_at__isnull=True)
-                ),
-                name='instance_retirement_consistent',
             ),
             # 同一集群内实例名称唯一
             models.UniqueConstraint(

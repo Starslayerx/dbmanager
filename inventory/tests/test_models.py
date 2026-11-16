@@ -5,6 +5,7 @@ from django.db.models.deletion import ProtectedError
 from django.utils import timezone
 
 from inventory.models import Cluster, DatabaseInstance, Department
+from inventory.schemas import InstanceIn, InstanceOut
 
 
 pytestmark = pytest.mark.django_db
@@ -136,37 +137,22 @@ def test_cannot_delete_cluster_with_instance(cluster, instance_data):
     assert Cluster.objects.filter(pk=cluster.pk).exists()
     assert DatabaseInstance.objects.filter(pk=instance.pk).exists()
 
-@pytest.mark.parametrize(
-    'status, has_retired_at, success',
-    [
-        ('retired', True, True),
-        ('retired', False, False),
-        ('active', False, True),
-        ('active', True, False),
-        ('paused', False, True),
-        ('paused', True, False),
-    ]
-)
-def test_retire_status(
-    instance_data,
-    status,
-    has_retired_at,
-    success,
-):
-    """测试状态与退役时间是否符合预期"""
+@pytest.mark.parametrize('status', ['active', 'paused'])
+@pytest.mark.parametrize('is_deleted', [False, True])
+def test_instance_deletion_timestamp(instance_data, status, is_deleted):
+    """软删除标记独立于管理状态，且不物理删除资产记录。"""
     instance_data['status'] = status
-    if has_retired_at:
-        instance_data['retired_at'] = timezone.now()
-    else:
-        instance_data['retired_at'] = None
+    instance_data['deleted_at'] = timezone.now() if is_deleted else None
 
-    if success:
-        instance = DatabaseInstance.objects.create(**instance_data)
-        instance.refresh_from_db()
+    instance = DatabaseInstance.objects.create(**instance_data)
+    instance.refresh_from_db()
 
-        assert instance.status == status
-        assert instance.retired_at == instance_data['retired_at']
-    else:
-        with pytest.raises(IntegrityError):
-            with transaction.atomic():
-                DatabaseInstance.objects.create(**instance_data)
+    assert instance.status == status
+    assert instance.deleted_at == instance_data['deleted_at']
+    assert DatabaseInstance.objects.filter(pk=instance.pk).exists()
+    assert InstanceOut.model_validate(instance).deleted_at == instance.deleted_at
+
+
+def test_instance_input_excludes_deletion_timestamp():
+    """删除时间由删除操作维护，不作为普通创建或更新的输入。"""
+    assert 'deleted_at' not in InstanceIn.model_fields
