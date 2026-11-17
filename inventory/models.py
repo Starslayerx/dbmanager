@@ -8,6 +8,7 @@ class Department(models.Model):
     name = models.CharField(max_length=64)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f'{self.name} ({self.code})'
@@ -31,6 +32,7 @@ class Cluster(models.Model):
     environment = models.CharField(max_length=16, choices=Environment.choices)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f'{self.name} ({self.code})'
