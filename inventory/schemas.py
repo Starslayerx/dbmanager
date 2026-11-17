@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any
 from ninja import Schema
 from pydantic import Field, StringConstraints
 
@@ -72,3 +72,7 @@ class InstanceOut(Schema):
 class ErrorOut(Schema):
     code: str
     message: str
+
+
+class ValidationErrorOut(Schema):
+    detail: list[dict[str, Any]]
