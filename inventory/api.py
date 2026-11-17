@@ -48,18 +48,20 @@ def get_cluster(request, cluster_id: int):
 )
 def create_cluster(request, payload: ClusterIn):
     """创建集群"""
-    if not Department.objects.filter(
-        pk=payload.department_id,
-        deleted_at__isnull=True,
-    ).exists():
-        return 404, {
-            'code': 'department_not_found',
-            'message': '部门不存在或已删除',
-        }
-
     try:
         with transaction.atomic():
+            department = Department.objects.select_for_update().filter(
+                pk=payload.department_id,
+                deleted_at__isnull=True,
+            ).first()
+            if department is None:
+                return 404, {
+                    'code': 'department_not_found',
+                    'message': '部门不存在或已删除',
+                }
+
             cluster = Cluster.objects.create(**payload.model_dump())
+
     except IntegrityError as exc:
         if isinstance(exc.__cause__, UniqueViolation):
             return 409, {
@@ -84,26 +86,30 @@ def create_cluster(request, payload: ClusterIn):
 )
 def update_cluster(request, cluster_id: int, payload: ClusterIn):
     """更新集群"""
-    cluster = Cluster.objects.filter(
-        pk=cluster_id,
-        deleted_at__isnull=True,
-    ).first()
-    if cluster is None:
-        return 404, {
-            'code': 'cluster_not_found',
-            'message': '集群不存在',
-        }
-    if not Department.objects.filter(
-        pk=payload.department_id,
-        deleted_at__isnull=True,
-    ).exists():
-        return 404, {
-            'code': 'department_not_found',
-            'message': '部门不存在或已删除',
-        }
-
     try:
         with transaction.atomic():
+            department = Department.objects.select_for_update().filter(
+                pk=payload.department_id,
+                deleted_at__isnull=True,
+            ).first()
+
+            if department is None:
+                return 404, {
+                    'code': 'department_not_found',
+                    'message': '部门不存在或已删除',
+                }
+
+            cluster = Cluster.objects.select_for_update().filter(
+                pk=cluster_id,
+                deleted_at__isnull=True,
+            ).first()
+
+            if cluster is None:
+                return 404, {
+                    'code': 'cluster_not_found',
+                    'message': '集群不存在或已删除',
+                }
+
             data = payload.model_dump()
             for field, value in data.items():
                 setattr(cluster, field, value)
@@ -132,7 +138,7 @@ def update_cluster(request, cluster_id: int, payload: ClusterIn):
 def delete_cluster(request, cluster_id: int):
     """删除集群"""
     with transaction.atomic():
-        cluster = Cluster.objects.filter(
+        cluster = Cluster.objects.select_for_update().filter(
             pk=cluster_id,
             deleted_at__isnull=True,
         ).first()
