@@ -78,3 +78,35 @@ class DatabaseInstance(models.Model):
 
     def __str__(self):
         return f'{self.name} ({self.code})'
+
+
+class InstanceDailySnapshot(models.Model):
+    snapshot_date = models.DateField()
+    department = models.ForeignKey(
+        Department,
+        on_delete=models.PROTECT,
+        related_name='daily_stats',
+    )
+    cluster = models.ForeignKey(
+        Cluster,
+        on_delete=models.PROTECT,
+        related_name='daily_stats',
+    )
+    instance_count = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['snapshot_date', 'cluster'],
+                name='unique_daily_snapshot_per_cluster',
+            ),
+        ]
+
+        indexes = [
+            models.Index(fields=['snapshot_date', 'department'], name='index_date_department')
+        ]
+
+    def __str__(self):
+        return f'{self.snapshot_date} - {self.department}, {self.cluster}, {self.instance_count}'
