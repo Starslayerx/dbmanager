@@ -9,6 +9,9 @@ wheels/
 # Virtual environments
 .venv
 
+# Celery Beat runtime files
+celerybeat-schedule*
+
 # dotfiles
 .env
 .env.*
