@@ -61,7 +61,10 @@ def finalize_rotation(credential_id: int) -> bool:
             .get(pk=credential_id)
         )
 
-        if credential.status != RotationStatus.ROTATING:
+        if credential.status not in (
+            RotationStatus.ROTATING,
+            RotationStatus.FAILED,
+        ):
             return False
 
         if not credential.pending_encrypted_password:
@@ -95,7 +98,10 @@ def reset_rotation(credential_id: int) -> bool:
             .get(pk=credential_id)
         )
 
-        if credential.status != RotationStatus.ROTATING:
+        if credential.status not in (
+            RotationStatus.ROTATING,
+            RotationStatus.FAILED,
+        ):
             return False
 
         credential.pending_encrypted_password = None
@@ -114,7 +120,7 @@ def reset_rotation(credential_id: int) -> bool:
 
 
 def mark_failed(credential_id: int) -> bool:
-    """目标库状态无法确认，保留 pending，等待人工处理"""
+    """目标库状态无法确认，保留 pending；failed 允许后续恢复重试"""
     with transaction.atomic():
         credential = (
             InstanceCredential.objects
@@ -122,13 +128,17 @@ def mark_failed(credential_id: int) -> bool:
             .get(pk=credential_id)
         )
 
-        if credential.status != RotationStatus.ROTATING:
+        if credential.status not in (
+            RotationStatus.ROTATING,
+            RotationStatus.FAILED,
+        ):
             return False
 
+        was_rotating = credential.status == RotationStatus.ROTATING
         credential.status = RotationStatus.FAILED
         credential.save(update_fields=['status', 'updated_at'])
 
-    return True
+    return was_rotating
 
 
 def execute_rotation(
@@ -161,7 +171,7 @@ def execute_rotation(
 
 
 def recover_stale_rotations(credential_id: int | None = None) -> int:
-    """恢复卡在 rotating 状态的凭据；返回成功处理的条数"""
+    """恢复卡在 rotating / failed 状态的凭据；返回成功处理的条数"""
     if credential_id is not None:
         credential_ids = [credential_id]
     else:
@@ -170,7 +180,10 @@ def recover_stale_rotations(credential_id: int | None = None) -> int:
         )
         credential_ids = list(
             InstanceCredential.objects.filter(
-                status=RotationStatus.ROTATING,
+                status__in=(
+                    RotationStatus.ROTATING,
+                    RotationStatus.FAILED,
+                ),
                 rotation_started_at__lt=cutoff,
             ).values_list('pk', flat=True)
         )
@@ -196,7 +209,10 @@ def recover_one(credential_id: int) -> bool:
         .get(pk=credential_id)
     )
 
-    if credential.status != RotationStatus.ROTATING:
+    if credential.status not in (
+        RotationStatus.ROTATING,
+        RotationStatus.FAILED,
+    ):
         return False
 
     instance = credential.instance
