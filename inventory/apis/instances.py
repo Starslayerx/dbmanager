@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from ninja import Router, Status
@@ -5,7 +6,14 @@ from ninja.pagination import PageNumberPagination, paginate
 from psycopg.errors import ForeignKeyViolation, UniqueViolation
 
 from inventory.models import Cluster, DatabaseInstance as Instance
-from inventory.schemas import InstanceIn, InstanceOut, ErrorOut, ValidationErrorOut
+from inventory.probes import tcp_probe
+from inventory.schemas import (
+    InstanceIn,
+    InstanceOut,
+    ErrorOut,
+    ProbeOut,
+    ValidationErrorOut,
+)
 
 
 router = Router(tags=['实例'])
@@ -155,3 +163,32 @@ def delete_instance(request, instance_id: int):
         instance.save(update_fields=['deleted_at', 'updated_at'])
 
         return Status(204, None)
+
+@router.post(
+    '/instances/{instance_id}/probe',
+    response={200: ProbeOut, 404: ErrorOut},
+)
+def probe_instance(request, instance_id: int):
+    """探测数据库实例 TCP 端口是否可达"""
+    instance = Instance.objects.filter(
+        pk=instance_id,
+        deleted_at__isnull=True,
+    ).first()
+
+    if instance is None:
+        return Status(404, {
+            'code': 'instance_not_found',
+            'message': '数据库实例不存在或已删除',
+        })
+
+    reachable, latency_ms, error = tcp_probe(
+        instance.host,
+        instance.port,
+        settings.TCP_PROBE_TIMEOUT,
+    )
+
+    return Status(200, {
+        'reachable': reachable,
+        'latency_ms': round(latency_ms, 2),
+        'error': error,
+    })

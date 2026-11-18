@@ -76,3 +76,8 @@ class ErrorOut(Schema):
 
 class ValidationErrorOut(Schema):
     detail: list[dict[str, Any]]
+
+class ProbeOut(Schema):
+    reachable: bool
+    latency_ms: float
+    error: str | None

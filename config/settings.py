@@ -48,6 +48,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'config.middleware.RequestTimingMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -159,3 +160,5 @@ LOGGING = {
         },
     },
 }
+
+TCP_PROBE_TIMEOUT = float(os.getenv('TCP_PROBE_TIMEOUT', '2'))
