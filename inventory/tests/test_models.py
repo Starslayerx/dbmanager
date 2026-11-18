@@ -1,12 +1,11 @@
 import pytest
 from django.core.exceptions import ValidationError
-from django.db import transaction, IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
 from django.utils import timezone
 
 from inventory.models import Cluster, DatabaseInstance, Department
 from inventory.schemas import InstanceIn, InstanceOut
-
 
 pytestmark = pytest.mark.django_db
 
@@ -14,30 +13,32 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture
 def department():
     return Department.objects.create(
-        code='game-dev',
-        name='游戏研发部',
+        code="game-dev",
+        name="游戏研发部",
     )
+
 
 @pytest.fixture
 def cluster(department):
     return Cluster.objects.create(
-        code='player-db',
-        name='玩家数据库集群',
+        code="player-db",
+        name="玩家数据库集群",
         department=department,
         engine=Cluster.Engine.MYSQL,
         environment=Cluster.Environment.TEST,
     )
 
+
 @pytest.fixture
 def instance_data(cluster):
     return {
-        'code': 'player-db-01',
-        'name': '玩家数据库01',
-        'cluster': cluster,
-        'host': '192.168.2.10',
-        'port': 3006,
-        'role': DatabaseInstance.Role.PRIMARY,
-        'status': DatabaseInstance.Status.ACTIVE,
+        "code": "player-db-01",
+        "name": "玩家数据库01",
+        "cluster": cluster,
+        "host": "192.168.2.10",
+        "port": 3006,
+        "role": DatabaseInstance.Role.PRIMARY,
+        "status": DatabaseInstance.Status.ACTIVE,
     }
 
 
@@ -50,75 +51,79 @@ def test_create_instance(instance_data, cluster, department):
     assert instance.cluster.department_id == department.pk
     assert cluster.instances.filter(pk=instance.pk).exists()
 
-@pytest.mark.parametrize('port', [-1, 0, 65536])
+
+@pytest.mark.parametrize("port", [-1, 0, 65536])
 def test_invalid_port_validation(instance_data, port):
     """测试非法端口校验"""
-    instance_data['port'] = port
+    instance_data["port"] = port
     instance = DatabaseInstance(**instance_data)
     with pytest.raises(ValidationError) as exc_info:
         instance.full_clean()  # 校验数据
 
-    assert 'port' in exc_info.value.message_dict
+    assert "port" in exc_info.value.message_dict
 
-@pytest.mark.parametrize('port', [-1, 0, 65536])
+
+@pytest.mark.parametrize("port", [-1, 0, 65536])
 def test_invalid_port_save(instance_data, port):
     """测试非法端口存储"""
-    instance_data['port'] = port
-    with pytest.raises(IntegrityError):
-        with transaction.atomic():
-            DatabaseInstance.objects.create(**instance_data)
+    instance_data["port"] = port
+    with pytest.raises(IntegrityError), transaction.atomic():
+        DatabaseInstance.objects.create(**instance_data)
+
 
 def test_department_code_duplicate(department):
     """测试部门编码重复"""
-    with pytest.raises(IntegrityError):
-        with transaction.atomic():
-            Department.objects.create(code=department.code, name='开发部2')
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Department.objects.create(code=department.code, name="开发部2")
+
 
 def test_cluster_code_duplicate(department, cluster):
     """测试集群编码重复"""
-    with pytest.raises(IntegrityError):
-        with transaction.atomic():
-            Cluster.objects.create(
-                code=cluster.code,
-                name='玩家数据库2',
-                department=department,
-                engine=Cluster.Engine.MYSQL,
-                environment=Cluster.Environment.TEST,
-            )
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Cluster.objects.create(
+            code=cluster.code,
+            name="玩家数据库2",
+            department=department,
+            engine=Cluster.Engine.MYSQL,
+            environment=Cluster.Environment.TEST,
+        )
 
-def test_instance_code_duplicate_with_different_cluster(department, cluster, instance_data):
+
+def test_instance_code_duplicate_with_different_cluster(
+    department, cluster, instance_data
+):
     """测试数据库实例编码重复，即使属于不同集群"""
     cluster2 = Cluster.objects.create(
-        code='player-db-2',
-        name='玩家数据库集群2',
+        code="player-db-2",
+        name="玩家数据库集群2",
         department=department,
         engine=Cluster.Engine.MYSQL,
         environment=Cluster.Environment.TEST,
     )
     instance_data2 = {
-        'code': instance_data['code'],
-        'name': '玩家数据库02',
-        'cluster': cluster2,
-        'host': '192.168.2.11',
-        'port': 3005,
-        'role': DatabaseInstance.Role.PRIMARY,
-        'status': DatabaseInstance.Status.ACTIVE,
+        "code": instance_data["code"],
+        "name": "玩家数据库02",
+        "cluster": cluster2,
+        "host": "192.168.2.11",
+        "port": 3005,
+        "role": DatabaseInstance.Role.PRIMARY,
+        "status": DatabaseInstance.Status.ACTIVE,
     }
     DatabaseInstance.objects.create(**instance_data)
-    with pytest.raises(IntegrityError):
-        with transaction.atomic():
-            DatabaseInstance.objects.create(**instance_data2)
+    with pytest.raises(IntegrityError), transaction.atomic():
+        DatabaseInstance.objects.create(**instance_data2)
+
 
 def test_instance_name_duplicate(cluster, instance_data):
     """测试同一集群实例名称相同"""
     instance_data2 = {
         **instance_data,
-        'code': 'player-db-2',
+        "code": "player-db-2",
     }
     DatabaseInstance.objects.create(**instance_data)
-    with pytest.raises(IntegrityError):
-        with transaction.atomic():
-            DatabaseInstance.objects.create(**instance_data2)
+    with pytest.raises(IntegrityError), transaction.atomic():
+        DatabaseInstance.objects.create(**instance_data2)
+
 
 def test_cannot_delete_department_with_cluster(department, cluster):
     """测试不能删除含有集群的部门"""
@@ -127,6 +132,7 @@ def test_cannot_delete_department_with_cluster(department, cluster):
 
     assert Department.objects.filter(pk=department.pk).exists()
     assert Cluster.objects.filter(pk=cluster.pk).exists()
+
 
 def test_cannot_delete_cluster_with_instance(cluster, instance_data):
     """测试不能删除含有实例的集群"""
@@ -137,22 +143,23 @@ def test_cannot_delete_cluster_with_instance(cluster, instance_data):
     assert Cluster.objects.filter(pk=cluster.pk).exists()
     assert DatabaseInstance.objects.filter(pk=instance.pk).exists()
 
-@pytest.mark.parametrize('status', ['active', 'paused'])
-@pytest.mark.parametrize('is_deleted', [False, True])
+
+@pytest.mark.parametrize("status", ["active", "paused"])
+@pytest.mark.parametrize("is_deleted", [False, True])
 def test_instance_deletion_timestamp(instance_data, status, is_deleted):
     """软删除标记独立于管理状态，且不物理删除资产记录"""
-    instance_data['status'] = status
-    instance_data['deleted_at'] = timezone.now() if is_deleted else None
+    instance_data["status"] = status
+    instance_data["deleted_at"] = timezone.now() if is_deleted else None
 
     instance = DatabaseInstance.objects.create(**instance_data)
     instance.refresh_from_db()
 
     assert instance.status == status
-    assert instance.deleted_at == instance_data['deleted_at']
+    assert instance.deleted_at == instance_data["deleted_at"]
     assert DatabaseInstance.objects.filter(pk=instance.pk).exists()
     assert InstanceOut.model_validate(instance).deleted_at == instance.deleted_at
 
 
 def test_instance_input_excludes_deletion_timestamp():
     """删除时间由删除操作维护，不作为普通创建或更新的输入"""
-    assert 'deleted_at' not in InstanceIn.model_fields
+    assert "deleted_at" not in InstanceIn.model_fields

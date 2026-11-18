@@ -5,26 +5,57 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('inventory', '0004_alter_department_deleted_at'),
+        ("inventory", "0004_alter_department_deleted_at"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='InstanceDailySnapshot',
+            name="InstanceDailySnapshot",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('snapshot_date', models.DateField()),
-                ('instance_count', models.PositiveIntegerField()),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('cluster', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='daily_stats', to='inventory.cluster')),
-                ('department', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='daily_stats', to='inventory.department')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("snapshot_date", models.DateField()),
+                ("instance_count", models.PositiveIntegerField()),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "cluster",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="daily_stats",
+                        to="inventory.cluster",
+                    ),
+                ),
+                (
+                    "department",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="daily_stats",
+                        to="inventory.department",
+                    ),
+                ),
             ],
             options={
-                'indexes': [models.Index(fields=['snapshot_date', 'department'], name='index_date_department')],
-                'constraints': [models.UniqueConstraint(fields=('snapshot_date', 'cluster'), name='unique_daily_snapshot_per_cluster')],
+                "indexes": [
+                    models.Index(
+                        fields=["snapshot_date", "department"],
+                        name="index_date_department",
+                    )
+                ],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("snapshot_date", "cluster"),
+                        name="unique_daily_snapshot_per_cluster",
+                    )
+                ],
             },
         ),
     ]

@@ -8,10 +8,9 @@ import pymysql
 from django.conf import settings
 from psycopg import sql
 
-
 logger = logging.getLogger(__name__)
 
-_POSTGRES_RETRYABLE_SQLSTATES = {'57P03', '53300'}
+_POSTGRES_RETRYABLE_SQLSTATES = {"57P03", "53300"}
 _MYSQL_RETRYABLE_ERROR_CODES = {2002, 2003, 2006, 2013}
 
 
@@ -25,7 +24,7 @@ def change_database_password(
     old_password: str,
     new_password: str,
 ) -> None:
-    if engine == 'postgres':
+    if engine == "postgres":
         _change_postgres_password(
             host=host,
             port=port,
@@ -36,7 +35,7 @@ def change_database_password(
         )
         return
 
-    if engine == 'mysql':
+    if engine == "mysql":
         _change_mysql_password(
             host=host,
             port=port,
@@ -46,7 +45,7 @@ def change_database_password(
         )
         return
 
-    raise ValueError(f'不支持的数据库类型: {engine}')
+    raise ValueError(f"不支持的数据库类型: {engine}")
 
 
 def verify_database_password(
@@ -59,7 +58,7 @@ def verify_database_password(
     password: str,
 ) -> bool:
     try:
-        if engine == 'postgres':
+        if engine == "postgres":
             connection = _connect_with_retry(
                 lambda: psycopg.connect(
                     host=host,
@@ -74,7 +73,7 @@ def verify_database_password(
             connection.close()
             return True
 
-        if engine == 'mysql':
+        if engine == "mysql":
             connection = _connect_with_retry(
                 lambda: pymysql.connect(
                     host=host,
@@ -84,16 +83,17 @@ def verify_database_password(
                     connect_timeout=settings.DB_ROTATION_TIMEOUT,
                     read_timeout=settings.DB_ROTATION_TIMEOUT,
                     write_timeout=settings.DB_ROTATION_TIMEOUT,
-                    charset='utf8mb4',
+                    charset="utf8mb4",
                 ),
                 engine=engine,
             )
             connection.close()
             return True
 
-    except Exception as exc:
+    # 驱动异常类型较多，这里统一记录并返回验证失败。
+    except Exception as exc:  # noqa: BLE001
         logger.info(
-            '目标数据库凭据验证失败：engine=%s host=%s port=%s error=%s',
+            "目标数据库凭据验证失败：engine=%s host=%s port=%s error=%s",
             engine,
             host,
             port,
@@ -127,8 +127,7 @@ def _connect_with_retry(
                 settings.DB_CONNECT_BACKOFF_SECONDS,
             ) * (2 ** (attempt - 1))
             logger.warning(
-                '连接目标数据库失败，%.2f 秒后重试（%s/%s）：'
-                'engine=%s error=%s',
+                "连接目标数据库失败，%.2f 秒后重试（%s/%s）：engine=%s error=%s",
                 delay,
                 attempt,
                 attempts,
@@ -137,11 +136,11 @@ def _connect_with_retry(
             )
             time.sleep(delay)
 
-    raise RuntimeError('数据库连接重试逻辑异常结束')
+    raise RuntimeError("数据库连接重试逻辑异常结束")
 
 
 def _is_retryable_connection_error(exc: Exception, engine: str) -> bool:
-    if engine == 'postgres':
+    if engine == "postgres":
         if isinstance(exc, OSError):
             return True
 
@@ -152,12 +151,9 @@ def _is_retryable_connection_error(exc: Exception, engine: str) -> bool:
         if sqlstate is None:
             return True
 
-        return (
-            sqlstate.startswith('08')
-            or sqlstate in _POSTGRES_RETRYABLE_SQLSTATES
-        )
+        return sqlstate.startswith("08") or sqlstate in _POSTGRES_RETRYABLE_SQLSTATES
 
-    if engine == 'mysql':
+    if engine == "mysql":
         if isinstance(exc, OSError):
             return True
 
@@ -168,10 +164,7 @@ def _is_retryable_connection_error(exc: Exception, engine: str) -> bool:
 
 
 def _postgres_sqlstate(exc: Exception) -> str | None:
-    return (
-        getattr(exc, 'sqlstate', None)
-        or getattr(exc.__cause__, 'sqlstate', None)
-    )
+    return getattr(exc, "sqlstate", None) or getattr(exc.__cause__, "sqlstate", None)
 
 
 def _change_postgres_password(
@@ -195,13 +188,13 @@ def _change_postgres_password(
             password=old_password,
             connect_timeout=settings.DB_ROTATION_TIMEOUT,
         ),
-        engine='postgres',
+        engine="postgres",
     )
 
     try:
         with connection.cursor() as cursor:
             cursor.execute(
-                sql.SQL('ALTER ROLE {} WITH PASSWORD %s').format(
+                sql.SQL("ALTER ROLE {} WITH PASSWORD %s").format(
                     sql.Identifier(username),
                 ),
                 [new_password],
@@ -211,7 +204,7 @@ def _change_postgres_password(
         try:
             connection.rollback()
         except Exception:
-            logger.debug('回滚目标数据库连接失败', exc_info=True)
+            logger.debug("回滚目标数据库连接失败", exc_info=True)
         raise
     finally:
         connection.close()
@@ -235,17 +228,15 @@ def _change_mysql_password(
             connect_timeout=settings.DB_ROTATION_TIMEOUT,
             read_timeout=settings.DB_ROTATION_TIMEOUT,
             write_timeout=settings.DB_ROTATION_TIMEOUT,
-            charset='utf8mb4',
+            charset="utf8mb4",
             autocommit=True,
         ),
-        engine='mysql',
+        engine="mysql",
     )
 
     try:
         with connection.cursor() as cursor:
             escaped_password = connection.escape(new_password)
-            cursor.execute(
-                f'ALTER USER USER() IDENTIFIED BY {escaped_password}'
-            )
+            cursor.execute(f"ALTER USER USER() IDENTIFIED BY {escaped_password}")
     finally:
         connection.close()

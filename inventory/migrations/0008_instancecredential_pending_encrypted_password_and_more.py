@@ -4,25 +4,32 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('inventory', '0007_databaseinstance_dbname'),
+        ("inventory", "0007_databaseinstance_dbname"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='instancecredential',
-            name='pending_encrypted_password',
+            model_name="instancecredential",
+            name="pending_encrypted_password",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='instancecredential',
-            name='rotation_started_at',
+            model_name="instancecredential",
+            name="rotation_started_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='instancecredential',
-            name='status',
-            field=models.CharField(choices=[('idle', 'Idle'), ('rotating', 'Rotating'), ('failed', 'Failed')], default='idle', max_length=16),
+            model_name="instancecredential",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("idle", "Idle"),
+                    ("rotating", "Rotating"),
+                    ("failed", "Failed"),
+                ],
+                default="idle",
+                max_length=16,
+            ),
         ),
     ]

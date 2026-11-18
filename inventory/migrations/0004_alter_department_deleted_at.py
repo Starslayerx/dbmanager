@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('inventory', '0003_cluster_deleted_at_department_deleted_at'),
+        ("inventory", "0003_cluster_deleted_at_department_deleted_at"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='department',
-            name='deleted_at',
+            model_name="department",
+            name="deleted_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
     ]

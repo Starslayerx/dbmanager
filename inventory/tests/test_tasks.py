@@ -11,7 +11,6 @@ from inventory.models import (
 )
 from inventory.tasks import collect_daily_instance_stats
 
-
 pytestmark = pytest.mark.django_db
 
 SNAPSHOT_DATE = date(2026, 11, 18)
@@ -19,14 +18,14 @@ SNAPSHOT_DATE = date(2026, 11, 18)
 
 @pytest.fixture
 def department():
-    return Department.objects.create(code='stats-department', name='统计部门')
+    return Department.objects.create(code="stats-department", name="统计部门")
 
 
 @pytest.fixture
 def cluster(department):
     return Cluster.objects.create(
-        code='stats-cluster',
-        name='统计集群',
+        code="stats-cluster",
+        name="统计集群",
         department=department,
         engine=Cluster.Engine.MYSQL,
         environment=Cluster.Environment.TEST,
@@ -38,7 +37,7 @@ def create_instance(cluster, code, deleted=False):
         code=code,
         name=code,
         cluster=cluster,
-        host='127.0.0.1',
+        host="127.0.0.1",
         port=3306,
         role=DatabaseInstance.Role.PRIMARY,
         status=DatabaseInstance.Status.ACTIVE,
@@ -47,26 +46,26 @@ def create_instance(cluster, code, deleted=False):
 
 
 def test_collect_daily_instance_stats_counts_active_instances(department, cluster):
-    create_instance(cluster, 'active-1')
-    create_instance(cluster, 'active-2')
-    create_instance(cluster, 'deleted-instance', deleted=True)
+    create_instance(cluster, "active-1")
+    create_instance(cluster, "active-2")
+    create_instance(cluster, "deleted-instance", deleted=True)
 
     empty_cluster = Cluster.objects.create(
-        code='empty-cluster',
-        name='空集群',
+        code="empty-cluster",
+        name="空集群",
         department=department,
         engine=Cluster.Engine.MYSQL,
         environment=Cluster.Environment.TEST,
     )
     deleted_cluster = Cluster.objects.create(
-        code='deleted-cluster',
-        name='已删除集群',
+        code="deleted-cluster",
+        name="已删除集群",
         department=department,
         engine=Cluster.Engine.MYSQL,
         environment=Cluster.Environment.TEST,
         deleted_at=timezone.now(),
     )
-    create_instance(deleted_cluster, 'deleted-cluster-instance')
+    create_instance(deleted_cluster, "deleted-cluster-instance")
 
     created = collect_daily_instance_stats(snapshot_date=SNAPSHOT_DATE)
 
@@ -87,7 +86,7 @@ def test_collect_daily_instance_stats_counts_active_instances(department, cluste
 
 
 def test_collect_daily_instance_stats_is_idempotent(cluster):
-    create_instance(cluster, 'first-instance')
+    create_instance(cluster, "first-instance")
 
     assert collect_daily_instance_stats(snapshot_date=SNAPSHOT_DATE) == 1
     snapshot = InstanceDailySnapshot.objects.get(
@@ -96,7 +95,7 @@ def test_collect_daily_instance_stats_is_idempotent(cluster):
     )
     original_pk = snapshot.pk
 
-    create_instance(cluster, 'second-instance')
+    create_instance(cluster, "second-instance")
     assert collect_daily_instance_stats(snapshot_date=SNAPSHOT_DATE) == 1
 
     snapshots = InstanceDailySnapshot.objects.filter(
@@ -110,10 +109,10 @@ def test_collect_daily_instance_stats_is_idempotent(cluster):
 
 
 def test_default_snapshot_date_is_yesterday(monkeypatch, cluster):
-    create_instance(cluster, 'instance')
+    create_instance(cluster, "instance")
 
     monkeypatch.setattr(
-        'inventory.tasks.timezone.localdate',
+        "inventory.tasks.timezone.localdate",
         lambda: date(2026, 11, 19),
     )
 
@@ -124,9 +123,9 @@ def test_default_snapshot_date_is_yesterday(monkeypatch, cluster):
 
 
 def test_snapshot_str_uses_instance_count(department, cluster):
-    create_instance(cluster, 'instance')
+    create_instance(cluster, "instance")
     collect_daily_instance_stats(snapshot_date=SNAPSHOT_DATE)
 
     snapshot = InstanceDailySnapshot.objects.get(cluster=cluster)
 
-    assert str(snapshot) == f'{SNAPSHOT_DATE} - {department}, {cluster}, 1'
+    assert str(snapshot) == f"{SNAPSHOT_DATE} - {department}, {cluster}, 1"

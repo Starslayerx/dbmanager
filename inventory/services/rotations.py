@@ -13,7 +13,6 @@ from inventory.services.db_rotator import (
     verify_database_password,
 )
 
-
 logger = logging.getLogger(__name__)
 RotationStatus = InstanceCredential.RotationStatus
 
@@ -25,9 +24,8 @@ def claim_rotation(
     """短事务认领凭据，持久化待应用的新密码"""
     with transaction.atomic():
         credential = (
-            InstanceCredential.objects
-            .select_for_update()
-            .select_related('instance__cluster')
+            InstanceCredential.objects.select_for_update()
+            .select_related("instance__cluster")
             .get(pk=credential_id)
         )
 
@@ -42,10 +40,10 @@ def claim_rotation(
         credential.rotation_started_at = timezone.now()
         credential.save(
             update_fields=[
-                'pending_encrypted_password',
-                'status',
-                'rotation_started_at',
-                'updated_at',
+                "pending_encrypted_password",
+                "status",
+                "rotation_started_at",
+                "updated_at",
             ],
         )
 
@@ -55,10 +53,8 @@ def claim_rotation(
 def finalize_rotation(credential_id: int) -> bool:
     """目标库改密成功后，将 pending 密码提升为正式密码"""
     with transaction.atomic():
-        credential = (
-            InstanceCredential.objects
-            .select_for_update()
-            .get(pk=credential_id)
+        credential = InstanceCredential.objects.select_for_update().get(
+            pk=credential_id
         )
 
         if credential.status not in (
@@ -77,12 +73,12 @@ def finalize_rotation(credential_id: int) -> bool:
         credential.rotated_at = timezone.now()
         credential.save(
             update_fields=[
-                'encrypted_password',
-                'pending_encrypted_password',
-                'status',
-                'rotation_started_at',
-                'rotated_at',
-                'updated_at',
+                "encrypted_password",
+                "pending_encrypted_password",
+                "status",
+                "rotation_started_at",
+                "rotated_at",
+                "updated_at",
             ],
         )
 
@@ -92,10 +88,8 @@ def finalize_rotation(credential_id: int) -> bool:
 def reset_rotation(credential_id: int) -> bool:
     """确认目标库未改密，清空 pending 并恢复 idle"""
     with transaction.atomic():
-        credential = (
-            InstanceCredential.objects
-            .select_for_update()
-            .get(pk=credential_id)
+        credential = InstanceCredential.objects.select_for_update().get(
+            pk=credential_id
         )
 
         if credential.status not in (
@@ -109,10 +103,10 @@ def reset_rotation(credential_id: int) -> bool:
         credential.rotation_started_at = None
         credential.save(
             update_fields=[
-                'pending_encrypted_password',
-                'status',
-                'rotation_started_at',
-                'updated_at',
+                "pending_encrypted_password",
+                "status",
+                "rotation_started_at",
+                "updated_at",
             ],
         )
 
@@ -122,10 +116,8 @@ def reset_rotation(credential_id: int) -> bool:
 def mark_failed(credential_id: int) -> bool:
     """目标库状态无法确认，保留 pending；failed 允许后续恢复重试"""
     with transaction.atomic():
-        credential = (
-            InstanceCredential.objects
-            .select_for_update()
-            .get(pk=credential_id)
+        credential = InstanceCredential.objects.select_for_update().get(
+            pk=credential_id
         )
 
         if credential.status not in (
@@ -136,7 +128,7 @@ def mark_failed(credential_id: int) -> bool:
 
         was_rotating = credential.status == RotationStatus.ROTATING
         credential.status = RotationStatus.FAILED
-        credential.save(update_fields=['status', 'updated_at'])
+        credential.save(update_fields=["status", "updated_at"])
 
     return was_rotating
 
@@ -153,19 +145,16 @@ def execute_rotation(
     credential, old_password, new_password = claimed
     instance = credential.instance
 
-    try:
-        change_database_password(
-            engine=instance.cluster.engine,
-            host=instance.host,
-            port=instance.port,
-            dbname=instance.dbname,
-            username=credential.username,
-            old_password=old_password,
-            new_password=new_password,
-        )
-    except Exception:
-        # 保留 rotating + pending，交给恢复流程判断目标库是否已改密。
-        raise
+    # 失败时保留 rotating + pending，交给恢复流程判断目标库是否已改密。
+    change_database_password(
+        engine=instance.cluster.engine,
+        host=instance.host,
+        port=instance.port,
+        dbname=instance.dbname,
+        username=credential.username,
+        old_password=old_password,
+        new_password=new_password,
+    )
 
     return finalize_rotation(credential_id)
 
@@ -185,7 +174,7 @@ def recover_stale_rotations(credential_id: int | None = None) -> int:
                     RotationStatus.FAILED,
                 ),
                 rotation_started_at__lt=cutoff,
-            ).values_list('pk', flat=True)
+            ).values_list("pk", flat=True)
         )
 
     recovered = 0
@@ -195,7 +184,7 @@ def recover_stale_rotations(credential_id: int | None = None) -> int:
                 recovered += 1
         except Exception:
             logger.exception(
-                '恢复密码轮换状态失败，credential_id=%s',
+                "恢复密码轮换状态失败，credential_id=%s",
                 cid,
             )
 
@@ -203,10 +192,8 @@ def recover_stale_rotations(credential_id: int | None = None) -> int:
 
 
 def recover_one(credential_id: int) -> bool:
-    credential = (
-        InstanceCredential.objects
-        .select_related('instance__cluster')
-        .get(pk=credential_id)
+    credential = InstanceCredential.objects.select_related("instance__cluster").get(
+        pk=credential_id
     )
 
     if credential.status not in (
@@ -223,6 +210,10 @@ def recover_one(credential_id: int) -> bool:
                 credential.pending_encrypted_password,
             )
         except Exception:
+            logger.exception(
+                "待应用密码解密失败，credential_id=%s",
+                credential_id,
+            )
             return mark_failed(credential_id)
 
         if verify_database_password(
@@ -238,6 +229,10 @@ def recover_one(credential_id: int) -> bool:
     try:
         old_password = decrypt_password(credential.encrypted_password)
     except Exception:
+        logger.exception(
+            "当前密码解密失败，credential_id=%s",
+            credential_id,
+        )
         return mark_failed(credential_id)
 
     if verify_database_password(

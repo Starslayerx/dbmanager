@@ -5,22 +5,36 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('inventory', '0005_instancedailysnapshot'),
+        ("inventory", "0005_instancedailysnapshot"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='InstanceCredential',
+            name="InstanceCredential",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('username', models.CharField(max_length=128)),
-                ('encrypted_password', models.TextField()),
-                ('rotated_at', models.DateTimeField()),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('instance', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='credential', to='inventory.databaseinstance')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("username", models.CharField(max_length=128)),
+                ("encrypted_password", models.TextField()),
+                ("rotated_at", models.DateTimeField()),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "instance",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="credential",
+                        to="inventory.databaseinstance",
+                    ),
+                ),
             ],
         ),
     ]

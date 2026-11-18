@@ -9,21 +9,18 @@ from django.utils import timezone
 from inventory.models import Cluster, InstanceCredential, InstanceDailySnapshot
 from inventory.services.rotations import execute_rotation, recover_stale_rotations
 
-
 logger = logging.getLogger(__name__)
 
 
 @shared_task
 def collect_daily_instance_stats(snapshot_date: date | None = None) -> int:
-    snapshot_date = snapshot_date or (
-        timezone.localdate() - timedelta(days=1)
-    )
+    snapshot_date = snapshot_date or (timezone.localdate() - timedelta(days=1))
 
     clusters = Cluster.objects.filter(
         deleted_at__isnull=True,
     ).annotate(
         instance_count=Count(
-            'instances',
+            "instances",
             filter=Q(instances__deleted_at__isnull=True),
         ),
     )
@@ -35,8 +32,8 @@ def collect_daily_instance_stats(snapshot_date: date | None = None) -> int:
                 snapshot_date=snapshot_date,
                 cluster=cluster,
                 defaults={
-                    'department_id': cluster.department_id,
-                    'instance_count': cluster.instance_count,
+                    "department_id": cluster.department_id,
+                    "instance_count": cluster.instance_count,
                 },
             )
             count += 1
@@ -51,7 +48,7 @@ def rotate_instance_passwords() -> int:
     credential_ids = list(
         InstanceCredential.objects.filter(
             instance__deleted_at__isnull=True,
-        ).values_list('pk', flat=True)
+        ).values_list("pk", flat=True)
     )
 
     rotated = 0
@@ -61,7 +58,7 @@ def rotate_instance_passwords() -> int:
                 rotated += 1
         except Exception:
             logger.exception(
-                '数据库密码轮换失败：credential_id=%s',
+                "数据库密码轮换失败：credential_id=%s",
                 credential_id,
             )
 

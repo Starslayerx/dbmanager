@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('inventory', '0006_instancecredential'),
+        ("inventory", "0006_instancecredential"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='databaseinstance',
-            name='dbname',
+            model_name="databaseinstance",
+            name="dbname",
             field=models.CharField(blank=True, max_length=63),
         ),
     ]

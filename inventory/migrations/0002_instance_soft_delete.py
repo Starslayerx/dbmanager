@@ -4,24 +4,25 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('inventory', '0001_initial'),
+        ("inventory", "0001_initial"),
     ]
 
     operations = [
         migrations.RemoveConstraint(
-            model_name='databaseinstance',
-            name='instance_retirement_consistent',
+            model_name="databaseinstance",
+            name="instance_retirement_consistent",
         ),
         migrations.RenameField(
-            model_name='databaseinstance',
-            old_name='retired_at',
-            new_name='deleted_at',
+            model_name="databaseinstance",
+            old_name="retired_at",
+            new_name="deleted_at",
         ),
         migrations.AlterField(
-            model_name='databaseinstance',
-            name='status',
-            field=models.CharField(choices=[('active', 'Active'), ('paused', 'Paused')], max_length=16),
+            model_name="databaseinstance",
+            name="status",
+            field=models.CharField(
+                choices=[("active", "Active"), ("paused", "Paused")], max_length=16
+            ),
         ),
     ]

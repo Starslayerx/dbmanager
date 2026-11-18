@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('inventory', '0002_instance_soft_delete'),
+        ("inventory", "0002_instance_soft_delete"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='cluster',
-            name='deleted_at',
+            model_name="cluster",
+            name="deleted_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='department',
-            name='deleted_at',
+            model_name="department",
+            name="deleted_at",
             field=models.CharField(blank=True, null=True),
         ),
     ]
