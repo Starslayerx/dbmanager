@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -172,3 +173,9 @@ CELERY_RESULT_BACKEND = os.getenv(
     'redis://127.0.0.1:6379/1',
 )
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULE = {
+    'collect-daily-instance-stats': {
+        'task': 'inventory.tasks.collect_daily_instance_stats',
+        'schedule': crontab(minute=0, hour=0),
+    }
+}
