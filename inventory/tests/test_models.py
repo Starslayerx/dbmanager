@@ -140,7 +140,7 @@ def test_cannot_delete_cluster_with_instance(cluster, instance_data):
 @pytest.mark.parametrize('status', ['active', 'paused'])
 @pytest.mark.parametrize('is_deleted', [False, True])
 def test_instance_deletion_timestamp(instance_data, status, is_deleted):
-    """软删除标记独立于管理状态，且不物理删除资产记录。"""
+    """软删除标记独立于管理状态，且不物理删除资产记录"""
     instance_data['status'] = status
     instance_data['deleted_at'] = timezone.now() if is_deleted else None
 
@@ -154,5 +154,5 @@ def test_instance_deletion_timestamp(instance_data, status, is_deleted):
 
 
 def test_instance_input_excludes_deletion_timestamp():
-    """删除时间由删除操作维护，不作为普通创建或更新的输入。"""
+    """删除时间由删除操作维护，不作为普通创建或更新的输入"""
     assert 'deleted_at' not in InstanceIn.model_fields

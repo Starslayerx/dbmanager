@@ -6,7 +6,7 @@ from ninja.pagination import PageNumberPagination, paginate
 from psycopg.errors import ForeignKeyViolation, UniqueViolation
 
 from inventory.models import Cluster, DatabaseInstance as Instance
-from inventory.probes import tcp_probe
+from inventory.services.tcp_probes import tcp_probe
 from inventory.schemas import (
     InstanceIn,
     InstanceOut,

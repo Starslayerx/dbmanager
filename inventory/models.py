@@ -52,6 +52,7 @@ class DatabaseInstance(models.Model):
     code = models.CharField(max_length=64, unique=True)
     name = models.CharField(max_length=64)
     cluster = models.ForeignKey(Cluster, on_delete=models.PROTECT, related_name='instances')
+    dbname = models.CharField(max_length=63, blank=True)
     host = models.CharField(max_length=255)
     port = models.IntegerField(validators=[
         MinValueValidator(1),
@@ -81,6 +82,7 @@ class DatabaseInstance(models.Model):
 
 
 class InstanceDailySnapshot(models.Model):
+    """实例数量统计模型"""
     snapshot_date = models.DateField()
     department = models.ForeignKey(
         Department,
@@ -110,3 +112,32 @@ class InstanceDailySnapshot(models.Model):
 
     def __str__(self):
         return f'{self.snapshot_date} - {self.department}, {self.cluster}, {self.instance_count}'
+
+
+class InstanceCredential(models.Model):
+    """凭据模型"""
+    class RotationStatus(models.TextChoices):
+        IDLE = 'idle'
+        ROTATING = 'rotating'
+        FAILED = 'failed'
+
+    status = models.CharField(
+        max_length=16,
+        choices=RotationStatus.choices,
+        default=RotationStatus.IDLE,
+    )
+    pending_encrypted_password = models.TextField(null=True, blank=True)
+    instance = models.OneToOneField(
+        DatabaseInstance,
+        on_delete=models.CASCADE,
+        related_name='credential',
+    )
+    username = models.CharField(max_length=128)
+    encrypted_password = models.TextField()
+    rotation_started_at = models.DateTimeField(null=True, blank=True)
+    rotated_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.instance}'

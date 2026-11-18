@@ -164,6 +164,15 @@ LOGGING = {
 
 TCP_PROBE_TIMEOUT = float(os.getenv('TCP_PROBE_TIMEOUT', '2'))
 
+POSTGRES_MAINTENANCE_DB = os.getenv(
+    'POSTGRES_MAINTENANCE_DB',
+    'postgres',
+)
+DB_ROTATION_TIMEOUT = int(os.getenv('DB_ROTATION_TIMEOUT', '5'))
+CREDENTIAL_ROTATION_STALE_SECONDS = int(
+    os.getenv('CREDENTIAL_ROTATION_STALE_SECONDS', '900')
+)
+
 CELERY_BROKER_URL = os.getenv(
     'CELERY_BROKER_URL',
     'redis://127.0.0.1:6379/0',
@@ -177,5 +186,10 @@ CELERY_BEAT_SCHEDULE = {
     'collect-daily-instance-stats': {
         'task': 'inventory.tasks.collect_daily_instance_stats',
         'schedule': crontab(minute=0, hour=0),
+    },
+    'rotate-instance-passwords': {
+        'task': 'inventory.tasks.rotate_instance_passwords',
+        'schedule': crontab(minute=0, hour='0,12'),
     }
 }
+CREDENTIAL_ENCRYPTION_KEY = os.environ['CREDENTIAL_ENCRYPTION_KEY']
