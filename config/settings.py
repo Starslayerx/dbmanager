@@ -13,7 +13,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 
-from celery.schedules import crontab
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -44,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_celery_beat",
     "inventory",
 ]
 
@@ -183,14 +183,5 @@ CELERY_RESULT_BACKEND = os.getenv(
     "redis://127.0.0.1:6379/1",
 )
 CELERY_TIMEZONE = TIME_ZONE
-CELERY_BEAT_SCHEDULE = {
-    "collect-daily-instance-stats": {
-        "task": "inventory.tasks.collect_daily_instance_stats",
-        "schedule": crontab(minute=0, hour=0),
-    },
-    "rotate-instance-passwords": {
-        "task": "inventory.tasks.rotate_instance_passwords",
-        "schedule": crontab(minute=0, hour="0,12"),
-    },
-}
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CREDENTIAL_ENCRYPTION_KEY = os.environ["CREDENTIAL_ENCRYPTION_KEY"]

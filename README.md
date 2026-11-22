@@ -42,6 +42,19 @@ CREDENTIAL_ENCRYPTION_KEY=生成的密钥
 uv run python manage.py migrate
 ```
 
+初始化默认的定时任务：
+
+```bash
+uv run python manage.py setup_periodic_tasks
+```
+
+该命令是幂等的，可以重复执行；会创建或更新以下两条任务：
+
+- `collect-daily-instance-stats`：每天 00:00 统计实例数量
+- `rotate-instance-passwords`：每隔 12 小时轮换实例密码
+
+调度配置保存在 `django-celery-beat` 的数据库表中，后续也可以在 Django admin 里调整。
+
 ## 启动后端
 
 启动 Django：
