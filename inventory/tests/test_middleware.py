@@ -18,7 +18,7 @@ def duration_header(response):
 
 
 def test_success_response_has_duration_header(client):
-    response = client.get("/api/openapi.json")
+    response = client.get("/api/v1/departments")
 
     assert response.status_code == 200
     duration_header(response)
@@ -33,9 +33,9 @@ def test_error_response_has_duration_header(client):
 
 def test_request_duration_is_logged(client, caplog):
     with caplog.at_level(logging.INFO, logger="config.middleware"):
-        response = client.get("/api/openapi.json")
+        response = client.get("/api/v1/departments")
 
     assert response.status_code == 200
     assert any(
-        "GET /api/openapi.json 200" in record.message for record in caplog.records
+        "GET /api/v1/departments 200" in record.message for record in caplog.records
     )

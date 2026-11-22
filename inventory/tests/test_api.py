@@ -1,6 +1,7 @@
 import pytest
 from django.utils import timezone
 
+from config.api import api
 from inventory.models import Cluster, DatabaseInstance, Department
 from inventory.schemas import ValidationErrorOut
 
@@ -141,10 +142,9 @@ def test_instance_validation_response(client, payloads, method, port):
         ("/api/v1/instances/{instance_id}", "put"),
     ],
 )
-def test_instance_validation_schema(client, settings, path, method):
-    settings.ALLOWED_HOSTS = ["testserver"]
-    schema = client.get("/api/openapi.json").json()
-    response = schema["paths"][path][method]["responses"]["422"]
+def test_instance_validation_schema(path, method):
+    schema = api.get_openapi_schema()
+    response = schema["paths"][path][method]["responses"][422]
     assert response["content"]["application/json"]["schema"]["$ref"].endswith(
         "/ValidationErrorOut"
     )
